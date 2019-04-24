@@ -1,16 +1,11 @@
 const BundleAnalyzerPlugin = require("webpack-bundle-analyzer")
   .BundleAnalyzerPlugin;
 const HtmlWebpackPlugin = require("html-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const webpack = require("webpack");
 const CleanWebpackPlugin = require("clean-webpack-plugin");
 const merge = require("webpack-merge");
 
 const base = {
-  entry: {
-    index: "./src/index.js",
-    demo: "./src/demo.js"
-  },
   module: {
     rules: [
       {
@@ -82,23 +77,14 @@ const base = {
 };
 const dev = {
   mode: "development",
+  entry: {
+    index: "./src/index.js",
+    demo: "./src/demo.js"
+  },
   output: {
     filename: "[name].[hash].js"
   },
   devtool: "source-map",
-  module: {
-    rules: [
-      {
-        test: /\.(jpg|png|gif)$/,
-        use: {
-          loader: "url-loader",
-          options: {
-            limit: 4096
-          }
-        }
-      }
-    ]
-  },
   plugins: [
     new HtmlWebpackPlugin({
       template: "./src/index.pug",
@@ -114,32 +100,21 @@ const dev = {
 
 const prod = {
   mode: "production",
+  entry: {
+    index: "./src/index.js",
+  },
   output: {
-    filename: "[name].js"
+    filename: "[name].js",
+    library: "FilterDropdown",
+    libraryTarget: "umd",
+    libraryExport: "default"
   },
   devtool: "none",
-  module: {
-    rules: [
-      {
-        test: /\.(jpg|png|gif)$/,
-        use: {
-          loader: "url-loader",
-          options: {
-            limit: 4096,
-            name: "[name].[ext]"
-          }
-        }
-      }
-    ]
-  },
   optimization: {
     usedExports: true
   },
   plugins: [
     new CleanWebpackPlugin(),
-    new MiniCssExtractPlugin({
-      filename: "[name].css"
-    }),
     new BundleAnalyzerPlugin()
   ]
 };

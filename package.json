@@ -1,8 +1,8 @@
 {
-  "name": "webpack-multipage",
+  "name": "filter-dropdown",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "filter dropdown,look like ant-design table filter",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "webpack-dev-server  --env.development",
     "build": "webpack --env.production"
@@ -11,7 +11,11 @@
     "*.css",
     "*.scss"
   ],
-  "author": "",
+  "author": "zhangyu1818",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhangyu1818/filter-dropdown.git"
+  },
   "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.4.3",

@@ -5,15 +5,17 @@ class FilterDropdown {
   #filterDropdown = null;
   #triggerEle = null;
   #items = null;
+  #isRadio = null;
   #onChange = null;
-  #filterDropdownPos = null;
   #isOpen = false;
   #lists = null;
-  constructor(element, items, onChange = noop) {
+  #prevSelected = [];
+  constructor(element, items = [], onChange = noop, isRadio = false) {
     if (!element) throw new Error("trigger element is null");
     this.#triggerEle = element;
     this.#items = items;
     this.#onChange = onChange;
+    this.#isRadio = isRadio;
     this.#triggerEle.addEventListener("click", this.#onClickTrigger);
   }
 
@@ -49,7 +51,6 @@ class FilterDropdown {
       `;
       document.body.appendChild(wrapper);
       this.#lists = this.#filterDropdown.querySelectorAll("li");
-      this.#filterDropdownPos = this.#filterDropdown.getBoundingClientRect();
       this.#filterDropdown.addEventListener("click", this.#onClickMenu);
       this.#filterDropdown.addEventListener("animationend", this.#onSlideOut);
       window.addEventListener("click", this.#onClickOther);
@@ -57,28 +58,33 @@ class FilterDropdown {
     this.#isOpen ? this.close() : this.open();
   };
   #onClickMenu = event => {
-    event.stopPropagation();
     const { target } = event;
+    event.preventDefault();
     const liEle = this.#findNode("li")(4)(target);
     const labelEle = this.#findNode("label")(3)(target);
     if (liEle) {
+      event.stopPropagation();
+      if (this.#isRadio) this.#setRadio(liEle);
       liEle.classList.toggle(styles.selected);
       const input = liEle.querySelector("input");
       input.checked = !input.checked;
-      liEle.querySelector("label").classList.remove(styles.checked);
+      const innerLabelEle = liEle.querySelector("label");
+      innerLabelEle !== labelEle &&
+        innerLabelEle.classList.remove(styles.checked);
     }
     if (labelEle) {
       labelEle.classList.toggle(styles.checked);
     }
     if (target.nodeName === "A") {
-      if (target.classList.contains(styles.clear)) this.#clearCheckd();
+      if (target.classList.contains(styles.clear)) this.#clearChecked();
       this.close();
     }
   };
   #onClickOther = ({ target }) => {
     if (
       !this.#triggerEle.contains(target) &&
-      !this.#filterDropdown.contains(target)
+      !this.#filterDropdown.contains(target) &&
+      this.#isOpen
     ) {
       this.close();
     }
@@ -104,6 +110,13 @@ class FilterDropdown {
     this.#filterDropdown.classList.add(styles.out);
     this.#getCheckedValue();
   };
+  destroy = () => {
+    this.#filterDropdown.outerHTML = "";
+    this.#triggerEle.removeEventListener("click", this.#onClickTrigger);
+    this.#filterDropdown.removeEventListener("click", this.#onClickMenu);
+    this.#filterDropdown.removeEventListener("animationend", this.#onSlideOut);
+    window.removeEventListener("click", this.#onClickOther);
+  };
   #setPos = () => {
     const {
       left,
@@ -111,8 +124,8 @@ class FilterDropdown {
       top,
       height
     } = this.#triggerEle.getBoundingClientRect();
-    const { width: selfWidth } = this.#filterDropdownPos;
-    this.#filterDropdown.style.left = left - selfWidth + width + "px";
+    this.#filterDropdown.style.left =
+      left - this.#filterDropdown.clientWidth + width + "px";
     this.#filterDropdown.style.top = top + height + 7 + "px";
   };
   #onSlideOut = () => {
@@ -125,13 +138,28 @@ class FilterDropdown {
     const values = [
       ...this.#filterDropdown.querySelectorAll("input:checked")
     ].map(input => input.dataset.value);
-    this.#onChange(values);
+    const changed = values.filter(value => !this.#prevSelected.includes(value));
+    if (values.length !== this.#prevSelected.length || changed.length !== 0) {
+      this.#prevSelected = values;
+      this.#onChange(values);
+    }
   };
-  #clearCheckd = () => {
-    [...this.#filterDropdown.querySelectorAll("input:checked")].forEach(
-      input => (input.checked = false)
-    );
+  #clearChecked = () => {
+    this.#filterDropdown
+      .querySelectorAll("input:checked")
+      .forEach(input => (input.checked = false));
     this.#lists.forEach(li => li.classList.remove(styles.selected));
+    this.#filterDropdown
+      .querySelectorAll("label")
+      .forEach(label => label.classList.remove(styles.checked));
+  };
+  #setRadio = node => {
+    this.#filterDropdown
+      .querySelectorAll("input:checked")
+      .forEach(input => !node.contains(input) && (input.checked = false));
+    this.#lists.forEach(
+      li => li !== node && li.classList.remove(styles.selected)
+    );
   };
 }
 
