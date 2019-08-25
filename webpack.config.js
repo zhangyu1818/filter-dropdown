@@ -104,7 +104,7 @@ const prod = {
     index: "./src/index.js",
   },
   output: {
-    filename: "[name].js",
+    filename: "filterDropdown.js",
     library: "FilterDropdown",
     libraryTarget: "umd",
     libraryExport: "default"

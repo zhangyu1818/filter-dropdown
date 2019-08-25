@@ -1,5 +1,7 @@
 import styles from "./styles.scss";
+
 function noop() {}
+
 class FilterDropdown {
   #isMount = false;
   #filterDropdown = null;
@@ -10,18 +12,34 @@ class FilterDropdown {
   #isOpen = false;
   #lists = null;
   #prevSelected = [];
-  constructor(element, items = [], onChange = noop, isRadio = false) {
+  #alignment;
+  #offsetTop;
+  #actionText;
+
+  constructor(element, items = [], onChange = noop, options = {}) {
     if (!element) throw new Error("trigger element is null");
+    const defaultOptions = {
+      radio: false,
+      alignment: "left",
+      okText: "确定",
+      resetText: "重置",
+      offsetTop: 0,
+      ...options
+    };
     this.#triggerEle = element;
     this.#items = items;
     this.#onChange = onChange;
-    this.#isRadio = isRadio;
+    this.#isRadio = defaultOptions.radio;
+    this.#alignment = defaultOptions.alignment;
+    this.#actionText = [defaultOptions.okText, defaultOptions.resetText];
+    this.#offsetTop = defaultOptions.offsetTop;
     this.#triggerEle.addEventListener("click", this.#onClickTrigger);
   }
 
   #onClickTrigger = event => {
     event.stopPropagation();
     if (!this.#isMount) {
+      const [okText, resetText] = this.#actionText;
       this.#isMount = true;
       const wrapper = document.createDocumentFragment();
       this.#filterDropdown = document.createElement("div");
@@ -45,8 +63,8 @@ class FilterDropdown {
         .join("")}
       </ul>
       <div class="${styles.filterDropdownBtns}">
-        <a class="${styles.confirm}">确定</a>
-        <a class="${styles.clear}">重置</a>
+        <a class="${styles.confirm}">${okText}</a>
+        <a class="${styles.clear}">${resetText}</a>
       </div>
       `;
       document.body.appendChild(wrapper);
@@ -57,11 +75,12 @@ class FilterDropdown {
     }
     this.#isOpen ? this.close() : this.open();
   };
+
   #onClickMenu = event => {
     const { target } = event;
     event.preventDefault();
-    const liEle = this.#findNode("li")(4)(target);
-    const labelEle = this.#findNode("label")(3)(target);
+    const liEle = target.closest("li");
+    const labelEle = target.closest("label");
     if (liEle) {
       event.stopPropagation();
       if (this.#isRadio) this.#setRadio(liEle);
@@ -80,6 +99,7 @@ class FilterDropdown {
       this.close();
     }
   };
+
   #onClickOther = ({ target }) => {
     if (
       !this.#triggerEle.contains(target) &&
@@ -89,27 +109,21 @@ class FilterDropdown {
       this.close();
     }
   };
-  #findNode = nodeName => deep => {
-    let currentDeep = 0;
-    const finder = node => {
-      if (++currentDeep > deep) return false;
-      if (node.nodeName === nodeName.toUpperCase()) return node;
-      return finder(node.parentNode);
-    };
-    return finder;
-  };
+
   open = () => {
     this.#isOpen = true;
     this.#setPos();
     this.#filterDropdown.classList.remove(styles.out);
     this.#filterDropdown.classList.add(styles.in);
   };
+
   close = () => {
     this.#isOpen = false;
     this.#filterDropdown.classList.remove(styles.in);
     this.#filterDropdown.classList.add(styles.out);
     this.#getCheckedValue();
   };
+
   destroy = () => {
     this.#filterDropdown.outerHTML = "";
     this.#triggerEle.removeEventListener("click", this.#onClickTrigger);
@@ -117,6 +131,7 @@ class FilterDropdown {
     this.#filterDropdown.removeEventListener("animationend", this.#onSlideOut);
     window.removeEventListener("click", this.#onClickOther);
   };
+
   #setPos = () => {
     const {
       left,
@@ -124,16 +139,25 @@ class FilterDropdown {
       top,
       height
     } = this.#triggerEle.getBoundingClientRect();
-    this.#filterDropdown.style.left =
-      left - this.#filterDropdown.clientWidth + width + "px";
-    this.#filterDropdown.style.top = top + height + 7 + "px";
+    if (this.#alignment === "right") {
+      this.#filterDropdown.style.left =
+        left - this.#filterDropdown.clientWidth + width + "px";
+    } else if (this.#alignment === "left") {
+      this.#filterDropdown.style.left = left + "px";
+    } else if (this.#alignment === "center") {
+      this.#filterDropdown.style.left =
+        left + width / 2 - this.#filterDropdown.clientWidth / 2 + "px";
+    }
+    this.#filterDropdown.style.top = top + height + this.#offsetTop + "px";
   };
+
   #onSlideOut = () => {
     if (!this.#isOpen) {
       this.#filterDropdown.style.left = null;
       this.#filterDropdown.style.top = null;
     }
   };
+
   #getCheckedValue = () => {
     const values = [
       ...this.#filterDropdown.querySelectorAll("input:checked")
@@ -144,6 +168,7 @@ class FilterDropdown {
       this.#onChange(values);
     }
   };
+
   #clearChecked = () => {
     this.#filterDropdown
       .querySelectorAll("input:checked")
@@ -153,6 +178,7 @@ class FilterDropdown {
       .querySelectorAll("label")
       .forEach(label => label.classList.remove(styles.checked));
   };
+
   #setRadio = node => {
     this.#filterDropdown
       .querySelectorAll("input:checked")
